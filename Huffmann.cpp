@@ -4,10 +4,16 @@
 #include <queue>
 
 typedef struct CharacterNodes {
+    std::vector<bool> characterCode;
     char character;
     int frequency;
     CharacterNodes* rightChild;
     CharacterNodes* leftChild;
+
+    ~CharacterNodes() {
+        delete leftChild;  // Delete the left subtree
+        delete rightChild; // Delete the right subtree
+    }
 }CharacterNodes;
 
 struct CompareCharacterNodes {
@@ -16,8 +22,17 @@ struct CompareCharacterNodes {
     }
 };
 
+std::vector<bool> ConvertStringToBinary (std::string x) {
+    std::vector<bool> binary;
+    for(int i = 0 ; i<x.length() ; i++) {
+        binary.push_back((x[i] == '0') ? false : true);
+    }
+    return binary;
+}
+
 CharacterNodes* CreateNode(char character , int frequency , CharacterNodes* right , CharacterNodes* left) {
     CharacterNodes* newNode = new CharacterNodes;
+    newNode->characterCode = {};
     newNode->character = character;
     newNode->frequency = frequency;
     newNode->rightChild = right;
@@ -35,35 +50,20 @@ void GenerateRandomTextFile(std::string filename){
     }
     file.close();
 }
-void WriteTreeRecursive(CharacterNodes* node, std::ofstream& outFile) {
-    if (node == nullptr) {
-        return;
-    }
 
-    if (node->leftChild == nullptr && node->rightChild == nullptr) {
-        char leaf_marker = '1';
-        outFile.write(&leaf_marker, sizeof(int));
-        outFile.write(&node->character, sizeof(char));
-    } else {
-        char internal_marker = '0';
-        outFile.write(&internal_marker, sizeof(int));
-        WriteTreeRecursive(node->leftChild, outFile);
-        WriteTreeRecursive(node->rightChild, outFile);
+void saveHuffmanCode(CharacterNodes* root , std::string currentcode) {
+    if(root == nullptr) return;
+    if(root->leftChild == nullptr && root->rightChild == nullptr) {  
+        root->characterCode = ConvertStringToBinary(currentcode);
+    }
+    else{
+        if(root->leftChild != nullptr) {
+            saveHuffmanCode(root->leftChild , currentcode + "0");
+    } 
+        if(root->rightChild != nullptr) {
+            saveHuffmanCode(root->rightChild , currentcode + "1");
     }
 }
-
-void SaveHuffmanTreeToFile(CharacterNodes* root, const std::string& output_filename) {
-    std::ofstream outFile(output_filename + ".bin", std::ios::binary | std::ios::out | std::ios::trunc);
-    if (!outFile.is_open()) {
-        std::cerr << "Error: Could not open file for writing Huffman tree: " << output_filename << "\n";
-        return;
-    }
-
-    if (root) { 
-        WriteTreeRecursive(root, outFile);
-    }
-    outFile.close();
-    std::cout << "Huffman tree saved to: " << output_filename << std::endl;
 }
 
 void HuffmanEncoding(std::string filename) {
@@ -95,8 +95,8 @@ void HuffmanEncoding(std::string filename) {
         min_heap.push(parent);
     }
     CharacterNodes* huffmanRoot = min_heap.top();
-    min_heap.pop(); 
-    SaveHuffmanTreeToFile(huffmanRoot , filename + "Compressed");
+    min_heap.pop();
+    saveHuffmanCode(huffmanRoot , "");
 }
 void HuffmanDecoding(std::string filename) {
 
